@@ -1,0 +1,5 @@
+jtype: FaissLMDBSearcher
+metas:
+  py_modules:
+    - executor/__init__.py
+  workspace: workspace/

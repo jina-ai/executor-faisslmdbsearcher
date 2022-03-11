@@ -1,0 +1,5 @@
+jtype: Flow
+version: '1'
+executors:
+  - name: indexer_storage
+    uses: indexer_storage.yml
