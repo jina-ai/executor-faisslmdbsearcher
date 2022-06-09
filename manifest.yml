@@ -2,4 +2,4 @@ manifest_version: 1
 name: FaissLMDBSearcher
 description: A similarity search Executor based on Faiss and LMDB
 url: https://github.com/jina-ai/executor-faisslmdbsearcher
-keywords: [faiss, lmdb, ann, 3.0-exclusive]
+keywords: [faiss, lmdb, ann]
