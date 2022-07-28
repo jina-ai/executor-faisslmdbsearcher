@@ -10,6 +10,8 @@ from bidict import bidict
 from jina import Document, DocumentArray, Executor, requests
 from jina.helper import batch_iterator
 
+import warnings
+
 from .commons import *
 
 GENERATOR_DELTA = Generator[
@@ -58,8 +60,10 @@ class FaissSearcher(Executor):
         max_num_training_points: Optional[int] = None,
         dump_path: Optional[str] = None,
         prefetch_size: Optional[int] = 512,
-        index_traversal_paths: str = '@r',
-        search_traversal_paths: str = '@r',
+        index_access_paths: str = '@r',
+        index_traversal_paths: Optional[str] = None,
+        search_access_paths: str = '@r',
+        search_traversal_paths: Optional[str] = None,
         is_distance: bool = True,
         on_gpu: bool = False,
         *args,
@@ -83,8 +87,10 @@ class FaissSearcher(Executor):
         :param dump_path: The path to the directory from where to load, and where to
             save the index state
         :param prefetch_size: the number of data to pre-load into RAM
-        :param traversal_paths: The default traversal path on docs (used for indexing,
+        :param access_paths: The default traversal path on docs (used for indexing,
             search and update)
+        :param search_traversal_paths: please use search_access_paths
+        :param index_traversal_paths: please use index_access_paths
         :param is_distance: Boolean flag that describes if distance metric need to be
             reinterpreted as similarities.
         """
@@ -111,8 +117,22 @@ class FaissSearcher(Executor):
 
         self.on_gpu = on_gpu
 
-        self.index_traversal_paths = index_traversal_paths
-        self.search_traversal_paths = search_traversal_paths
+        if index_traversal_paths is not None:
+            warnings.warn("'index_traversal_paths' will be deprecated in the future, please use 'index_access_paths'.",
+                          DeprecationWarning,
+                          stacklevel=2)
+            self.index_access_paths = index_traversal_paths
+        else:
+            self.index_access_paths = index_access_paths
+
+        if search_traversal_paths is not None:
+            warnings.warn("'search_traversal_paths' will be deprecated in the future, please use 'search_access_paths'.",
+                          DeprecationWarning,
+                          stacklevel=2)
+            self.search_access_paths = search_traversal_paths
+        else:
+            self.search_access_paths = search_access_paths
+
         self.is_distance = is_distance
 
         self._ids_to_inds = bidict()
@@ -360,13 +380,13 @@ class FaissSearcher(Executor):
             return
 
         limit = int(parameters.get('limit', self.limit))
-        traversal_paths = parameters.get('traversal_paths', self.search_traversal_paths)
+        access_paths = parameters.get('access_paths', self.search_access_paths)
 
         # expand topk number guarantee to return topk results
         # TODO WARNING: maybe this would degrade the query speed
         expand_topk = limit + self.deleted_count
 
-        query_docs = docs[traversal_paths]
+        query_docs = docs[access_paths]
         vecs = query_docs.embeddings.astype(np.float32)
 
         if self.normalize:
@@ -412,7 +432,7 @@ class FaissSearcher(Executor):
         :param docs: `Document` with same shaped `.embedding`.
         :param parameters: Dictionary with optional parameters that can be used to
             override the parameters set at initialization. The only supported key is
-            `traversal_paths`.
+            `access_paths`.
         """
 
         if docs is None:
@@ -424,8 +444,8 @@ class FaissSearcher(Executor):
                 self.num_dim, trained_index_file=self.trained_index_file
             )
 
-        traversal_paths = parameters.get('traversal_paths', self.index_traversal_paths)
-        flat_docs = docs.traverse_flat(traversal_paths)
+        access_paths = parameters.get('access_paths', self.index_access_paths)
+        flat_docs = docs.traverse_flat(access_paths)
         if len(flat_docs) == 0:
             return
 
@@ -514,8 +534,8 @@ class FaissSearcher(Executor):
         if docs is None:
             return
 
-        traversal_paths = parameters.get('traversal_paths', self.index_traversal_paths)
-        flat_docs = docs.traverse_flat(traversal_paths)
+        access_paths = parameters.get('access_paths', self.index_access_paths)
+        flat_docs = docs.traverse_flat(access_paths)
         if len(flat_docs) == 0:
             return
 

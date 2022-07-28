@@ -38,8 +38,8 @@ class FaissLMDBSearcher(Executor):
         self._vec_indexer.search(docs, parameters)
         kv_parameters = copy.deepcopy(parameters)
 
-        kv_parameters['traversal_paths'] = ','.join(
-            [path + 'm' for path in kv_parameters.get('traversal_paths', '@r')]
+        kv_parameters['access_paths'] = ','.join(
+            [path + 'm' for path in kv_parameters.get('access_paths', '@r')]
         )
 
         self._kv_indexer.search(docs, parameters=kv_parameters)
